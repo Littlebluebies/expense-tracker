@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import { getAuth } from "firebase/auth";
 import {
   initializeFirestore,
@@ -18,6 +19,16 @@ const firebaseConfig = {
 
 // init
 const app = initializeApp(firebaseConfig);
+
+// App Check: ยืนยันว่า request มาจากเว็บเราจริง กันบอท/สคริปต์ยิง API ตรงๆ (สมัครรัวๆ เขียนข้อมูลขยะ)
+// ตั้ง REACT_APP_RECAPTCHA_SITE_KEY ใน Vercel แล้วไปเปิด Enforce ใน Firebase Console > App Check
+const recaptchaKey = process.env.REACT_APP_RECAPTCHA_SITE_KEY;
+if (recaptchaKey) {
+  initializeAppCheck(app, {
+    provider: new ReCaptchaEnterpriseProvider(recaptchaKey),
+    isTokenAutoRefreshEnabled: true,
+  });
+}
 
 // export ใช้งาน
 export const auth = getAuth(app);

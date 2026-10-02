@@ -9,13 +9,46 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // ตัวเลขเงิน: มากกว่า 0 และไม่เกินพันล้าน (กันค่าขยะ)
+    function validAmount(v) {
+      return v is number && v > 0 && v <= 1000000000;
+    }
+
+    // ข้อความสั้นๆ (หน้าเว็บจำกัด 100 ตัว เผื่อไว้ 200)
+    function shortText(d, field) {
+      return !(field in d) || (d[field] is string && d[field].size() <= 200);
+    }
+
     function validTransaction() {
       let d = request.resource.data;
       return d.userId == request.auth.uid
-        && d.amount is number && d.amount > 0
+        && d.keys().hasOnly(['userId', 'amount', 'type', 'category', 'date', 'note', 'createdAt', 'recurringId'])
+        && validAmount(d.amount)
         && d.type in ['income', 'expense']
-        && d.category is string
-        && d.date is timestamp;
+        && d.category is string && d.category.size() <= 50
+        && d.date is timestamp
+        && shortText(d, 'note')
+        && shortText(d, 'recurringId');
+    }
+
+    function validRecurring() {
+      let d = request.resource.data;
+      return d.userId == request.auth.uid
+        && d.keys().hasOnly(['userId', 'type', 'amount', 'category', 'note', 'day', 'startMonth', 'lastPosted', 'active', 'createdAt'])
+        && validAmount(d.amount)
+        && d.type in ['income', 'expense']
+        && d.category is string && d.category.size() <= 50
+        && d.day is int && d.day >= 1 && d.day <= 31
+        && shortText(d, 'note');
+    }
+
+    // budgets/{uid} = { budget, monthly: { "YYYY-MM": number|null }, categories: { key: number } }
+    function validBudget() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['budget', 'monthly', 'categories'])
+        && (!('budget' in d) || d.budget is number)
+        && (!('monthly' in d) || (d.monthly is map && d.monthly.size() <= 600))
+        && (!('categories' in d) || (d.categories is map && d.categories.size() <= 50));
     }
 
     match /transactions/{id} {
@@ -29,19 +62,15 @@ service cloud.firestore {
     // รายการประจำ (ค่าเช่า เงินเดือน ฯลฯ)
     match /recurring/{id} {
       allow read, delete: if signedIn() && resource.data.userId == request.auth.uid;
-      allow create: if signedIn()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.amount is number && request.resource.data.amount > 0
-        && request.resource.data.day is int
-        && request.resource.data.day >= 1 && request.resource.data.day <= 31;
+      allow create: if signedIn() && validRecurring();
       allow update: if signedIn()
         && resource.data.userId == request.auth.uid
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.amount > 0;
+        && validRecurring();
     }
 
     match /budgets/{uid} {
-      allow read, write: if signedIn() && request.auth.uid == uid;
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow write: if signedIn() && request.auth.uid == uid && validBudget();
     }
   }
 }

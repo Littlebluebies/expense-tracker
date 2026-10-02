@@ -6,12 +6,14 @@ import {
 import { auth } from "../firebase/config";
 import { errorMessage } from "../firebase/errors";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { expired } = useAuth();
 
   const [showReset, setShowReset] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -62,6 +64,11 @@ export default function Login() {
           </div>
 
           {error && <div className="alert alert-danger py-2 small">{error}</div>}
+          {!error && expired && (
+            <div className="alert alert-warning py-2 small">
+              ⏱️ เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง
+            </div>
+          )}
 
           <input
             className="form-control mb-2"
