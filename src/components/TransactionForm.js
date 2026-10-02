@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
-import {
-    addDoc,
-    collection,
-    doc,
-    serverTimestamp,
-    updateDoc,
-} from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { commit } from "../firebase/write";
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories";
-import { fromInputDate, toInputDate } from "../utils/format";
+import { addTransaction } from "../firebase/transactions";
+import {
+    EXPENSE_CATEGORIES,
+    INCOME_CATEGORIES,
+    getCategory,
+} from "../constants/categories";
+import { formatMoney, fromInputDate, toInputDate } from "../utils/format";
 
 const emptyForm = () => ({
     type: "expense",
@@ -19,7 +18,7 @@ const emptyForm = () => ({
     note: "",
 });
 
-export default function TransactionForm({ uid, editing, onDone, notify }) {
+export default function TransactionForm({ uid, editing, onDone, notify, quickItems = [] }) {
     const [form, setForm] = useState(emptyForm);
 
     // เปิดโหมดแก้ไข -> เติมค่าลงฟอร์ม
@@ -72,24 +71,59 @@ export default function TransactionForm({ uid, editing, onDone, notify }) {
             commit(updateDoc(doc(db, "transactions", editing.id), data), notify);
             notify("แก้ไขรายการแล้ว");
         } else {
-            commit(
-                addDoc(collection(db, "transactions"), {
-                    ...data,
-                    userId: uid,
-                    createdAt: serverTimestamp(),
-                }),
-                notify
-            );
-            notify("เพิ่มรายการแล้ว");
+            addTransaction(uid, data, notify);
         }
         // คงประเภท/หมวด/วันที่ไว้ เผื่อจดหลายรายการติดกัน
         setForm((f) => ({ ...f, amount: "", note: "" }));
         onDone(fromInputDate(form.date));
     };
 
+    // จดด่วน: กดครั้งเดียวลงรายการวันนี้เลย
+    const quickAdd = (item) => {
+        const label = item.note || getCategory(item.category).label;
+        addTransaction(
+            uid,
+            {
+                amount: item.amount,
+                type: item.type,
+                category: item.category,
+                note: item.note,
+                date: new Date(),
+            },
+            notify,
+            `เพิ่ม "${label}" แล้ว`
+        );
+        onDone(new Date());
+    };
+
     return (
         <form className="card app-card p-3 mb-3" onSubmit={submit} id="transaction-form">
             <h6 className="mb-2">{editing ? "✏️ แก้ไขรายการ" : "➕ เพิ่มรายการ"}</h6>
+
+            {!editing && quickItems.length > 0 && (
+                <div className="mb-3">
+                    <small className="text-body-secondary d-block mb-1">⚡ จดด่วน (วันนี้)</small>
+                    <div className="d-flex flex-wrap gap-2">
+                        {quickItems.map((item) => (
+                            <button
+                                key={item.key}
+                                type="button"
+                                className="btn btn-sm btn-outline-secondary quick-chip"
+                                onClick={() => quickAdd(item)}
+                            >
+                                {getCategory(item.category).icon}{" "}
+                                <span className="text-truncate">
+                                    {item.note || getCategory(item.category).label}
+                                </span>{" "}
+                                <span className={item.type === "income" ? "text-success" : "text-danger"}>
+                                    {item.type === "income" ? "+" : "−"}
+                                    {formatMoney(item.amount)}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="btn-group w-100 mb-2" role="group">
                 <button

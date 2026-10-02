@@ -10,6 +10,7 @@ const MESSAGES = {
     "auth/weak-password": "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
     "auth/too-many-requests": "พยายามหลายครั้งเกินไป กรุณาลองใหม่ภายหลัง",
     "auth/network-request-failed": "เชื่อมต่ออินเทอร์เน็ตไม่ได้",
+    "auth/requires-recent-login": "กรุณาออกจากระบบแล้วเข้าใหม่อีกครั้งก่อนทำรายการนี้",
     "permission-denied": "ไม่มีสิทธิ์เข้าถึงข้อมูล (ตรวจสอบ Firestore Rules)",
     unavailable: "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่",
 };

@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { signOut } from "firebase/auth";
-import { auth } from "../firebase/config";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import { useBudgets, useTransactions } from "../utils/useFinanceData";
 import { useRecurring } from "../utils/useRecurring";
 import { useTheme } from "../utils/theme";
+import { frequentItems } from "../utils/insights";
 import { formatMoney, monthKey, monthLabel, shiftMonth } from "../utils/format";
 import BudgetCard from "../components/BudgetCard";
+import MonthCompareCard from "../components/MonthCompareCard";
 import CategoryBudgetCard from "../components/CategoryBudgetCard";
 import RecurringCard from "../components/RecurringCard";
 import TransactionForm from "../components/TransactionForm";
@@ -31,14 +33,7 @@ export default function Dashboard() {
     const { user } = useAuth();
     const [theme, toggleTheme] = useTheme();
 
-    // แจ้งเตือนแบบ toast
-    const [toast, setToast] = useState(null);
-    const toastTimer = useRef();
-    const notify = useCallback((text, variant = "success") => {
-        clearTimeout(toastTimer.current);
-        setToast({ text, variant });
-        toastTimer.current = setTimeout(() => setToast(null), 2500);
-    }, []);
+    const notify = useToast();
 
     const { transactions, loading, error } = useTransactions(user.uid);
     const { items: recurringItems } = useRecurring(user.uid, transactions, !loading, notify);
@@ -72,6 +67,8 @@ export default function Dashboard() {
         )[0];
         return { income, expense, categoryTotals, topCategory };
     }, [monthTx]);
+
+    const quickItems = useMemo(() => frequentItems(transactions), [transactions]);
 
     const budget = budgetFor(month);
     const isCustomBudget =
@@ -113,12 +110,14 @@ export default function Dashboard() {
                         >
                             {theme === "dark" ? "☀️" : "🌙"}
                         </button>
-                        <button
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={() => signOut(auth)}
+                        <Link
+                            to="/settings"
+                            className="btn btn-sm btn-outline-secondary"
+                            aria-label="ตั้งค่าบัญชี"
+                            title="ตั้งค่าบัญชี"
                         >
-                            ออกจากระบบ
-                        </button>
+                            ⚙️
+                        </Link>
                     </div>
                 </div>
 
@@ -158,6 +157,13 @@ export default function Dashboard() {
                     </div>
                 )}
 
+                {!user.emailVerified && (
+                    <div className="alert alert-info small py-2">
+                        📧 ยังไม่ได้ยืนยันอีเมล — <Link to="/settings">ยืนยันที่หน้าตั้งค่า</Link>{" "}
+                        (ช่วยให้กู้รหัสผ่านได้แน่นอน)
+                    </div>
+                )}
+
                 {error && <div className="alert alert-danger small">{error}</div>}
 
                 {/* สรุปยอดเดือน */}
@@ -171,6 +177,8 @@ export default function Dashboard() {
                         <span>⬇️ รายจ่าย {formatMoney(expense)}</span>
                     </div>
                 </div>
+
+                <MonthCompareCard transactions={transactions} month={month} />
 
                 <BudgetCard
                     key={month}
@@ -188,6 +196,7 @@ export default function Dashboard() {
                     editing={editing}
                     onDone={handleFormDone}
                     notify={notify}
+                    quickItems={quickItems}
                 />
 
                 <CategoryBudgetCard
@@ -218,14 +227,6 @@ export default function Dashboard() {
                     notify={notify}
                 />
             </div>
-
-            {toast && (
-                <div className="app-toast">
-                    <div className={`alert alert-${toast.variant} shadow mb-0 py-2`}>
-                        {toast.text}
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

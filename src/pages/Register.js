@@ -1,8 +1,13 @@
 import { useState } from "react";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import {
+    createUserWithEmailAndPassword,
+    sendEmailVerification,
+    updateProfile,
+} from "firebase/auth";
 import { auth } from "../firebase/config";
 import { errorMessage } from "../firebase/errors";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
     const [username, setUsername] = useState("");
@@ -11,6 +16,7 @@ export default function Register() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const { refresh } = useAuth();
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -37,6 +43,10 @@ export default function Register() {
                 password
             );
             await updateProfile(user, { displayName: username.trim() });
+            // ให้ Dashboard แสดงชื่อทันที (onAuthStateChanged ยิงไปก่อนตั้งชื่อเสร็จ)
+            refresh();
+            // ส่งอีเมลยืนยัน ไม่ต้องรอ ถ้าส่งไม่สำเร็จ ผู้ใช้กดส่งใหม่ได้ที่หน้าตั้งค่า
+            sendEmailVerification(user).catch(console.error);
         } catch (err) {
             setError(errorMessage(err));
         } finally {

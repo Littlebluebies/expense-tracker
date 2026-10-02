@@ -1,35 +1,8 @@
 import { useState } from "react";
-import { deleteDoc, doc } from "firebase/firestore";
-import { db } from "../firebase/config";
-import { commit } from "../firebase/write";
+import { deleteTransaction } from "../firebase/transactions";
 import { getCategory } from "../constants/categories";
 import { formatMoney, toInputDate } from "../utils/format";
-
-// ส่งออกเป็น CSV (เปิดใน Excel ได้ ภาษาไทยไม่เพี้ยนเพราะใส่ BOM)
-const exportCsv = (rows, filename) => {
-    const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const lines = [
-        ["วันที่", "ประเภท", "หมวด", "จำนวนเงิน", "บันทึก"].map(esc).join(","),
-        ...rows.map((t) =>
-            [
-                toInputDate(t.date),
-                t.type === "income" ? "รายรับ" : "รายจ่าย",
-                getCategory(t.category).label,
-                t.type === "income" ? t.amount : -t.amount,
-                t.note,
-            ]
-                .map(esc)
-                .join(",")
-        ),
-    ];
-    const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-};
+import { exportCsv } from "../utils/csv";
 
 export default function TransactionList({ transactions, month, editingId, onEdit, notify }) {
     const [typeFilter, setTypeFilter] = useState("all");
@@ -60,12 +33,8 @@ export default function TransactionList({ transactions, month, editingId, onEdit
         g.net += t.type === "income" ? t.amount : -t.amount;
     });
 
-    const remove = (t) => {
-        const label = `${getCategory(t.category).label} ${formatMoney(t.amount)}`;
-        if (!window.confirm(`ลบรายการ "${label}" ใช่ไหม?`)) return;
-        commit(deleteDoc(doc(db, "transactions", t.id)), notify);
-        notify("ลบรายการแล้ว");
-    };
+    // ลบทันที แล้วกด "เลิกทำ" ใน toast ได้ (ไม่ต้องกดยืนยันทุกครั้ง)
+    const remove = (t) => deleteTransaction(t, notify);
 
     return (
         <div className="card app-card p-3 mb-3">
