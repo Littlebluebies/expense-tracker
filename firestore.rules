@@ -1,0 +1,47 @@
+rules_version = '2';
+
+// คัดลอกไปวางที่ Firebase Console > Firestore Database > Rules แล้วกด Publish
+// ผู้ใช้แต่ละคนอ่าน/เขียนได้เฉพาะข้อมูลของตัวเอง
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function validTransaction() {
+      let d = request.resource.data;
+      return d.userId == request.auth.uid
+        && d.amount is number && d.amount > 0
+        && d.type in ['income', 'expense']
+        && d.category is string
+        && d.date is timestamp;
+    }
+
+    match /transactions/{id} {
+      allow read, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && validTransaction();
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && validTransaction();
+    }
+
+    // รายการประจำ (ค่าเช่า เงินเดือน ฯลฯ)
+    match /recurring/{id} {
+      allow read, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.amount is number && request.resource.data.amount > 0
+        && request.resource.data.day is int
+        && request.resource.data.day >= 1 && request.resource.data.day <= 31;
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.amount > 0;
+    }
+
+    match /budgets/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+  }
+}

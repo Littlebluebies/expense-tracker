@@ -1,0 +1,133 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap');
+
+:root {
+  --app-bg: #eef1f5;
+  --app-card: #ffffff;
+  --app-row: #f6f7f9;
+}
+
+[data-bs-theme="dark"] {
+  --app-bg: #0f1115;
+  --app-card: #212529;
+  --app-row: #2a2e33;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+  background: var(--app-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-bg {
+  background: var(--app-bg);
+}
+
+.app-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+.card,
+.app-card {
+  border-radius: 16px !important;
+  border: none !important;
+  background: var(--app-card);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 360px;
+}
+
+.btn {
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.form-control,
+.form-select,
+.input-group-text {
+  border-radius: 12px;
+}
+
+.wallet-card {
+  border-radius: 20px;
+  background: linear-gradient(135deg, #4f46e5, #2563eb);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.25);
+}
+
+[data-bs-theme="dark"] .wallet-card {
+  background: linear-gradient(135deg, #1e293b, #334155);
+  box-shadow: none;
+}
+
+.tx-row {
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--app-row);
+  margin-bottom: 6px;
+  transition: background 0.2s ease;
+}
+
+.tx-editing {
+  outline: 2px solid var(--bs-primary);
+}
+
+.tx-icon {
+  font-size: 1.25rem;
+  width: 1.75rem;
+  text-align: center;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.app-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 1080;
+  width: max-content;
+  max-width: calc(100% - 32px);
+}
+
+.app-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+  padding: 16px;
+}
+
+.app-modal {
+  width: 100%;
+  max-width: 340px;
+}
+
+/* ฟอร์มงบรายหมวด */
+.cat-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cat-input {
+  flex: 0 0 96px !important;
+}
